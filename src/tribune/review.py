@@ -190,6 +190,22 @@ Do NOT flag:
 - Style differences your linter would catch (assume CI runs linters).
 - Personal preferences that are not in the repo's documented conventions.
 - Cosmetic naming bikeshedding.
+- The ABSENCE of files outside the diff. You only see the diff in this
+  prompt -- the repo almost certainly has many files that are not
+  shown here (README.md, LICENSE, pyproject.toml, CI config, existing
+  source files, etc.). Do not claim "missing README" or "no LICENSE"
+  or "no CI config" unless the diff itself REMOVES that file. If a
+  PR description, the file paths in the diff, or the patches
+  themselves imply the file exists elsewhere on the branch, assume
+  it does.
+- Lack of test coverage based on TEST FUNCTION NAMES alone. Before
+  claiming a feature is untested, read the BODIES of all test
+  functions in the diff (and in adjacent tests/* files in the
+  chunk). A test named descriptively like `test_invalid_role_rejected`
+  may cover a feature whose keywords (`CHECK`, `constraint`, `enum`)
+  do not appear in the test's name -- the assertions in the body
+  tell you what is actually being exercised. Only flag missing
+  coverage when no test in the visible code asserts on the behavior.
 """
 
 

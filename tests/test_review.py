@@ -5,6 +5,7 @@ from __future__ import annotations
 from tribune.review import (
     _LLMSubReview,
     _LLMSummary,
+    _SYSTEM_PROMPT,
     _chunk_files,
     _should_review,
     review_pull_request,
@@ -137,3 +138,38 @@ class TestReviewPullRequest:
         assert result.verdict == "comment"
         assert len(result.findings) == 2
         assert {f.file for f in result.findings} == {"f0.py", "f1.py"}
+
+
+# ---------------------------------------------------------------------------
+# System-prompt regression guards
+#
+# Issues #1 and #2 were both classes of false positives the reviewer kept
+# emitting because the system prompt did not warn it off. The fix is
+# prompt-side, so the tests live in the same place: lock in that the
+# anti-false-positive instructions are present so a future prompt edit
+# cannot silently remove them.
+# ---------------------------------------------------------------------------
+
+
+class TestSystemPromptAntiFalsePositiveRules:
+    def test_warns_against_flagging_absent_files_outside_diff(self):
+        """Issue #1: 'Missing README' false-positive when README exists on the branch."""
+        text = _SYSTEM_PROMPT.lower()
+        assert "absence of files outside the diff" in text, (
+            "system prompt no longer tells the LLM to ignore files outside "
+            "the diff; #1 will regress"
+        )
+        # Concrete examples the LLM is expected to back off from.
+        assert "missing readme" in text or "no readme" in text or "readme.md" in text
+
+    def test_warns_against_flagging_missing_tests_by_name_alone(self):
+        """Issue #2: test-coverage false-positive when test name lacks the feature keyword."""
+        text = _SYSTEM_PROMPT.lower()
+        assert "test function names" in text or "test names" in text, (
+            "system prompt no longer warns against name-based test-coverage "
+            "claims; #2 will regress"
+        )
+        assert "bodies" in text or "body" in text, (
+            "system prompt no longer instructs the LLM to read test bodies; "
+            "#2 will regress"
+        )
